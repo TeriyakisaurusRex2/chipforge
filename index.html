@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChipForge — 8-bit SFX &amp; Music Studio</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header id="topbar">
+  <div id="logo" title="ChipForge — 8-bit SFX &amp; Music Studio">▚ CHIPFORGE</div>
+
+  <nav id="tabs">
+    <button class="tabBtn active" data-tab="music">MUSIC</button>
+    <button class="tabBtn" data-tab="sfx">SFX</button>
+    <button class="tabBtn" data-tab="help">HELP</button>
+  </nav>
+
+  <div id="transport">
+    <button id="btnPlay" title="Play / Stop (Space)">▶</button>
+    <button id="btnStop" title="Stop and rewind to start">■</button>
+    <button id="btnLoop" class="toggle on" title="Loop the song when it reaches the end">LOOP</button>
+    <button id="btnRec" class="toggle rec" title="Record: while playing, notes you play on your keyboard/MIDI get written into the piano roll">●REC</button>
+    <label title="Tempo in beats per minute">BPM <input id="inpBpm" type="number" min="40" max="300" step="1" value="120"></label>
+    <label title="Song length in bars (4 beats each)">BARS <input id="inpBars" type="number" min="1" max="64" step="1" value="4"></label>
+    <label title="Grid snap — the smallest note size you can draw">SNAP
+      <select id="selSnap">
+        <option value="8">1/4</option>
+        <option value="4">1/8</option>
+        <option value="2" selected>1/16</option>
+        <option value="1">1/32</option>
+      </select>
+    </label>
+    <span id="pos" title="Position: bar . beat">1.1</span>
+  </div>
+
+  <div id="projbtns">
+    <input id="inpTitle" value="untitled" spellcheck="false" title="Project / export file name">
+    <button id="btnNew" title="Start a fresh empty project">NEW</button>
+    <button id="btnDemo" title="Load the built-in demo song">DEMO</button>
+    <button id="btnSave" title="Save project as a .json file">SAVE</button>
+    <button id="btnLoad" title="Open a saved .json project">OPEN</button>
+    <button id="btnImport" title="Convert an MP3/WAV song into notes on the four channels (automatic transcription — gives you a draft to clean up)">IMPORT</button>
+    <button id="btnExportMp3" class="accent" title="Render the whole song and download it as an MP3">EXPORT MP3</button>
+    <button id="btnExportWav" title="Render the whole song and download it as a WAV (best for seamless loops)">WAV</button>
+    <label title="Master output volume">VOL <input id="inpMaster" type="range" min="0" max="1" step="0.01" value="0.8"></label>
+  </div>
+</header>
+
+<main>
+  <!-- ======================= MUSIC TAB ======================= -->
+  <section id="view-music">
+    <aside id="rack">
+      <div id="channels"></div>
+      <div id="instPanel"></div>
+      <div id="refPanel">
+        <h3 title="Play the original song quietly under your channels — for A/B-ing a cover against the source. Never included in exports.">REFERENCE TRACK</h3>
+        <div class="instRow">
+          <button id="btnRefLoad" title="Load an MP3/WAV to play along with the song (kept in memory only — reload it next session)">LOAD</button>
+          <span id="refName">— none —</span>
+          <button id="btnRefOn" class="chBtn on" title="Hear the reference during playback (takes effect on next play)">ON</button>
+        </div>
+        <div class="instRow">
+          <span class="lbl" title="Reference playback volume">VOLUME</span>
+          <input id="refVol" type="range" min="0" max="1" step="0.01" value="0.5">
+          <span class="val" id="refVolVal">50</span>
+        </div>
+        <div class="instRow">
+          <span class="lbl" title="Where in the audio file bar 1 starts, in seconds — nudge to line the original up with your grid">OFFSET</span>
+          <input id="refOffset" type="number" step="0.05" value="0" style="width:70px">
+          <span class="val">sec</span>
+        </div>
+      </div>
+    </aside>
+    <div id="rollWrap">
+      <canvas id="roll"></canvas>
+      <div id="rollBtns">
+        <button id="btnGhost" class="toggle on" title="Show other channels' notes faintly behind the current channel">GHOSTS</button>
+        <button id="btnFollow" class="toggle on" title="Auto-scroll the view to follow the playhead during playback">FOLLOW</button>
+        <button id="btnZoomOut" title="Zoom out (Ctrl + mouse wheel also works)">−</button>
+        <button id="btnZoomIn" title="Zoom in (Ctrl + mouse wheel also works)">+</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= SFX TAB ======================= -->
+  <section id="view-sfx" hidden>
+    <aside id="sfxPresets">
+      <h3 title="Each button rolls fresh random parameters tuned for that sound type — click it again for a different take">GENERATORS</h3>
+      <button data-preset="pickup">PICKUP/COIN</button>
+      <button data-preset="laser">LASER/SHOOT</button>
+      <button data-preset="explosion">EXPLOSION</button>
+      <button data-preset="powerup">POWERUP</button>
+      <button data-preset="hit">HIT/HURT</button>
+      <button data-preset="jump">JUMP</button>
+      <button data-preset="blip">BLIP/SELECT</button>
+      <hr>
+      <button data-preset="random" title="Completely random parameters — sometimes gold, sometimes garbage">RANDOM</button>
+      <button id="btnMutate" title="Nudge every current parameter a little — use to refine a sound you almost like">MUTATE</button>
+    </aside>
+
+    <div id="sfxMain">
+      <div id="sfxTop">
+        <button id="sfxPlay" class="accent big" title="Play the current sound (Enter also works on this tab)">▶ PLAY</button>
+        <canvas id="sfxWave" title="Waveform of the rendered sound"></canvas>
+      </div>
+      <div id="sfxParams"></div>
+      <div id="sfxBottom">
+        <input id="sfxName" value="sfx" spellcheck="false" title="Name used for the export file and the library entry">
+        <button id="btnSfxSave" title="Save this sound into the project's SFX library">SAVE TO LIBRARY</button>
+        <button id="btnSfxMp3" class="accent" title="Render and download this sound as MP3">EXPORT MP3</button>
+        <button id="btnSfxWav" title="Render and download this sound as WAV">WAV</button>
+      </div>
+    </div>
+
+    <aside id="sfxLibPanel">
+      <h3>LIBRARY</h3>
+      <div id="sfxLib"></div>
+    </aside>
+  </section>
+
+  <!-- ======================= HELP TAB ======================= -->
+  <section id="view-help" hidden>
+    <div id="helpContent"></div>
+  </section>
+</main>
+
+<footer id="status">
+  <span id="statusHint"></span>
+  <span id="statusOct" title="Base octave for the typing keyboard — PageUp/PageDown to change"></span>
+  <span id="statusMidi" title="Connected MIDI inputs"></span>
+</footer>
+
+<input type="file" id="fileInput" accept=".json" hidden>
+<input type="file" id="audioInput" accept="audio/*,.mp3,.wav,.ogg" hidden>
+
+<!-- ======================= IMPORT WIZARD ======================= -->
+<div id="importModal" hidden>
+  <div id="importBox">
+    <button id="impClose" title="Close">✕</button>
+    <h2>IMPORT SONG → CHANNELS</h2>
+
+    <div id="impPick">
+      <p>Pick an MP3/WAV and ChipForge will listen to it and sketch the melody, harmony,
+      bass and drums onto the four channels. The result is a <b>draft</b> — expect to fix
+      octaves and delete clutter in the piano roll. The original is loaded as a reference
+      track so you can compare while you clean up.</p>
+      <button id="impLoad" class="accent big">LOAD AUDIO FILE</button>
+    </div>
+
+    <div id="impConf" hidden>
+      <p id="impFileInfo"></p>
+      <div class="impRow">
+        <span class="lbl" title="Higher = more notes detected (and more clutter); lower = only the strongest notes survive">NOTE SENS</span>
+        <input id="impNoteSens" type="range" min="0.4" max="2.5" step="0.05" value="1">
+        <span class="val" id="impNoteSensVal">1.00</span>
+      </div>
+      <div class="impRow">
+        <span class="lbl" title="Higher = more drum hits detected; lower = only the hardest hits">DRUM SENS</span>
+        <input id="impDrumSens" type="range" min="0.4" max="2.5" step="0.05" value="1">
+        <span class="val" id="impDrumSensVal">1.00</span>
+      </div>
+      <button id="impRun" class="accent">ANALYZE</button>
+      <button id="impOther" title="Pick a different audio file">LOAD OTHER FILE</button>
+    </div>
+
+    <div id="impProg" hidden>
+      <div id="impBarOuter"><div id="impBar"></div></div>
+      <p id="impStage">listening…</p>
+    </div>
+
+    <div id="impRes" hidden>
+      <p id="impSummary"></p>
+      <div class="impRow">
+        <span class="lbl" title="Detected tempo — correct it if the guess is off (double/half errors are common) and the notes re-snap to the new grid">BPM</span>
+        <input id="impBpm" type="number" min="40" max="300" step="0.5" style="width:80px">
+        <button id="impBpmHalf" title="Halve the tempo — use when the import looks squeezed onto half the bars">÷2</button>
+        <button id="impBpmDouble" title="Double the tempo — use when the import looks stretched across twice the bars">×2</button>
+        <span class="lbl" title="Grid the notes get snapped to">GRID</span>
+        <select id="impGrid">
+          <option value="4">1/8</option>
+          <option value="2" selected>1/16</option>
+          <option value="1">1/32</option>
+        </select>
+      </div>
+      <div class="impRow" id="impStreams"></div>
+      <button id="impApply" class="accent">WRITE TO CHANNELS</button>
+    </div>
+  </div>
+</div>
+
+<script src="lame.min.js"></script>
+<script src="help.js"></script>
+<script src="synth.js"></script>
+<script src="sfx.js"></script>
+<script src="pianoroll.js"></script>
+<script src="input.js"></script>
+<script src="io.js"></script>
+<script src="import.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

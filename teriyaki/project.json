@@ -1,0 +1,8 @@
+{
+  "name": "ChipForge",
+  "description": "Game Boy Advance-style chiptune and sound effects maker, right in the browser.",
+  "type": "play",
+  "category": "tool",
+  "created": "2026-06-12",
+  "tags": ["audio", "chiptune", "MIDI"]
+}
